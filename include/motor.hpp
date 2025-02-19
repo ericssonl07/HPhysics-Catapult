@@ -248,6 +248,7 @@
 #include <cmath>
 
 class Motor {
+    friend int main();
     vex::motor* m_device;
     vex::gearSetting m_cartridge_gears;
     double m_gear_ratio;

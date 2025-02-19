@@ -3,14 +3,14 @@
 double selector(double max)
 {
     double value;
-    int power = 0;
+    int power = -1;
     bool lastL, lastR, lastU, lastD;
     lastL = lastR = lastU = lastD = false;
     while (!controller.ButtonA.pressing())
     {
         controller.Screen.clearScreen();
         controller.Screen.setCursor(1, 1);
-        controller.Screen.print("%em", value);
+        controller.Screen.print("%.6f m", value);
         // selection mode
         if (controller.ButtonLeft.pressing() && !lastL)
         {

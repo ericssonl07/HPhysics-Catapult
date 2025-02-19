@@ -13,17 +13,21 @@
 vex::brain brain;
 vex::controller controller;
 vex::pneumatics pneumatics(brain.ThreeWirePort.A);
-Motor motor(vex::PORT14, vex::gearSetting::ratio36_1, 1, false, Quantity(0.051, Unit::meter()));
+Motor motor(vex::PORT1, vex::gearSetting::ratio36_1, 0.0625, false, Quantity(0.0254, Unit::meter()));
 
 int main() {
-    const double max_meter_displacement = 0.3;
+    constexpr const double max_meter_displacement = 0.176;
     pneumatics.open();
     double distance = selector(max_meter_displacement);
     motor.spin_distance(distance, Unit::meter());
+    // motor.spin_distance(0.254, Unit::meter());
+    // motor.spin_distance(Quantity(0.0254 * 2 * M_PI / 16, Unit::meter()));
+    // motor.spin_angular(Quantity(180, Unit::degree() / Unit::second()));
     while (true)
     {
         if (controller.ButtonA.pressing())
         {
+            printf("\n\n\n******Toggled!******\n\n\n");
             pneumatics.close();
             break;
         }
@@ -32,6 +36,6 @@ int main() {
     // motor.spin_distance(Quantity(0.32044245, Unit::meter())); // 2 inches * 2PI
     while (true)
     {
-        vexDelay(1000);
+        vex::this_thread::sleep_for(1000);
     }
 }

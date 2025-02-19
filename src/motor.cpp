@@ -96,14 +96,11 @@ void Motor::spin_distance(Quantity distance, bool reset)
     // Get the wheel radius in meters.
     double wheel_radius_m = m_wheel_radius.convert_to(Unit::meter()).value();
 
-    // Compute how many wheel rotations correspond to the given distance.
-    double revolutions = distance_m / (2 * M_PI * wheel_radius_m);
-
-    double displacement_rad = revolutions * 2 * M_PI;
+    double displacement_rad = distance_m / wheel_radius_m;
 
     double displacement_deg = displacement_rad * 180 / M_PI;
 
-    double net_displacement_deg = displacement_deg * m_gear_ratio;
+    double net_displacement_deg = displacement_deg / m_gear_ratio;
 
     double initial_pos = m_device -> position(vex::rotationUnits::deg);
     double target_pos = initial_pos + net_displacement_deg;
@@ -126,7 +123,7 @@ void Motor::spin_distance(Quantity distance, bool reset)
     const int loop_delay_ms = 20;
     
     // Use a steady clock to compute dt between iterations.
-    auto last_time = std::chrono::steady_clock::now();
+    auto last_time = std::chrono::high_resolution_clock::now();
     
     // --- Control Loop ---
     while (true)
@@ -144,7 +141,7 @@ void Motor::spin_distance(Quantity distance, bool reset)
         }
         
         // Compute time elapsed (in seconds) since the last loop.
-        auto current_time = std::chrono::steady_clock::now();
+        auto current_time = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = current_time - last_time;
         double dt = elapsed.count();
         last_time = current_time;
@@ -158,10 +155,10 @@ void Motor::spin_distance(Quantity distance, bool reset)
         double output = Kp * error + Ki * integral + Kd * derivative;
         
         // Saturate the output to ±12 volts.
-        if (output > 12.0)
-            output = 12.0;
-        else if (output < -12.0)
-            output = -12.0;
+        if (output > 9.0)
+            output = 9.0;
+        else if (output < -9.0)
+            output = -9.0;
         
         // Command the motor.
         // Note: We choose the motor’s spin direction based on the sign of the PID output.
