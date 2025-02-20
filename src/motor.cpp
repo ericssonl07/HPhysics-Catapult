@@ -47,8 +47,6 @@ Quantity Motor::max_angular_velocity()
 
 void Motor::reset()
 {
-    m_device -> spin(vex::directionType::fwd, 1.2, vex::voltageUnits::volt);
-    vex::this_thread::sleep_for(500);
     m_device -> resetPosition();
 }
 
@@ -109,8 +107,9 @@ void Motor::spin_distance(Quantity distance, bool reset)
     // These constants are provided as an example. You may need to tune them for your system.
     // const double Kp = 0.025;
     const double Kp = 0.15;
-    const double Ki = 0.0015;
-    const double Kd = 0.005;
+    const double Ki = 0.015;
+    const double I_threshold = 1000; // when error is greater than this, don't accumulate
+    const double Kd = 0.025;
     // const double Kd = 0.001;
     
     double integral = 0.0;
@@ -120,23 +119,26 @@ void Motor::spin_distance(Quantity distance, bool reset)
     const double tolerance = 0.5;
     
     // How long to wait between iterations (in milliseconds)
-    const int loop_delay_ms = 20;
+    const int loop_delay_ms = 2;
     
     // Use a steady clock to compute dt between iterations.
     auto last_time = std::chrono::high_resolution_clock::now();
     
     // --- Control Loop ---
+    long long iter = 0;
     while (true)
     {
         // Get the current motor position (in degrees).
         double current_pos = m_device -> position(vex::rotationUnits::deg);
         double error = target_pos - current_pos;
 
-        printf("Current: %.2f, Target: %.2f, Error: %.2f\n", current_pos, target_pos, error);
+        if (!(++iter % 100))
+            printf("Current: %.2f, Target: %.2f, Error: %.2f\n", current_pos, target_pos, error);
         
         // If we’re within tolerance, exit the loop.
         if (std::fabs(error) < tolerance)
         {
+            printf("Final error: %.e deg < %e deg tolerance\n", error, tolerance);
             break;
         }
         
@@ -147,7 +149,8 @@ void Motor::spin_distance(Quantity distance, bool reset)
         last_time = current_time;
         
         // Update the integral and derivative terms.
-        integral += error * dt;
+        if (std::fabs(error) < I_threshold)
+            integral += error * dt;
         double derivative = (error - previous_error) / dt;
         previous_error = error;
         
@@ -174,6 +177,81 @@ void Motor::spin_distance(Quantity distance, bool reset)
     // When the loop ends, stop the motor (using a braking mode).
     m_device -> stop(vex::brakeType::brake);
 }
+
+// void Motor::spin_distance(Quantity distance, bool reset)
+// {
+//     // (Optionally) reset the motor’s position.
+//     if (reset)
+//     {
+//         m_device->resetPosition();
+//     }
+
+//     // Convert the target distance to meters.
+//     double distance_m = distance.convert_to(Unit::meter()).value();
+    
+//     // Get the wheel radius in meters.
+//     double wheel_radius_m = m_wheel_radius.convert_to(Unit::meter()).value();
+//     double displacement_rad = distance_m / wheel_radius_m;
+//     double displacement_deg = displacement_rad * 180 / M_PI;
+//     double net_displacement_deg = displacement_deg / m_gear_ratio;
+
+//     double initial_pos = m_device->position(vex::rotationUnits::deg);
+//     double target_pos = initial_pos + net_displacement_deg;
+
+//     // --- PID Controller Setup ---
+//     const double Kp = 0.15;
+//     const double Ki = 0.015;
+//     const double Kd = 0.025;
+//     const double I_threshold = 1000; // When error is greater than this, don't accumulate
+//     const double output_min = 0.3;
+//     const double output_max = 9.0;
+//     const double p_threshold = 1000.0;
+//     const double gamma = 1.0;
+//     const double i_max = 1.0e30;
+
+//     // Create a PID instance
+//     PID pidController(Kp, Ki, Kd, output_min, output_max, I_threshold, gamma, i_max, p_threshold);
+    
+//     // Set the target position in the PID controller
+//     pidController.set_target(target_pos);
+
+//     // Tolerance (in motor degrees) at which we consider the move “complete”
+//     const double tolerance = 0.5;
+
+//     // How long to wait between iterations (in milliseconds)
+//     const int loop_delay_ms = 2;
+    
+//     // --- Control Loop ---
+//     long long iter = 0;
+//     while (true)
+//     {
+//         // Get the current motor position (in degrees).
+//         double current_pos = m_device->position(vex::rotationUnits::deg);
+//         double error = target_pos - current_pos;
+
+//         if (!(++iter % 100))
+//             printf("Current: %.2f, Target: %.2f, Error: %.2f\n", current_pos, target_pos, error);
+        
+//         // If we’re within tolerance, exit the loop.
+//         if (std::fabs(error) < tolerance)
+//         {
+//             printf("Final error: %.e deg < %e deg tolerance\n", error, tolerance);
+//             break;
+//         }
+
+//         // Calculate the PID output
+//         double output = pidController.output(current_pos);
+
+//         // Command the motor.
+//         m_device->spin(vex::directionType::fwd, output, vex::voltageUnits::volt);
+        
+//         // Wait a short while before the next control update.
+//         vex::this_thread::sleep_for(loop_delay_ms);
+//     }
+    
+//     // When the loop ends, stop the motor (using a braking mode).
+//     m_device->stop(vex::brakeType::brake);
+// }
 
 
 void Motor::spin_distance(double distance, Unit unit)

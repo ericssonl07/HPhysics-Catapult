@@ -18,11 +18,9 @@ Motor motor(vex::PORT1, vex::gearSetting::ratio36_1, 0.0625, false, Quantity(0.0
 int main() {
     constexpr const double max_meter_displacement = 0.176;
     pneumatics.open();
+    motor.reset();
     double distance = selector(max_meter_displacement);
-    motor.spin_distance(distance, Unit::meter());
-    // motor.spin_distance(0.254, Unit::meter());
-    // motor.spin_distance(Quantity(0.0254 * 2 * M_PI / 16, Unit::meter()));
-    // motor.spin_angular(Quantity(180, Unit::degree() / Unit::second()));
+    motor.spin_distance(-distance * 2, Unit::meter());
     while (true)
     {
         if (controller.ButtonA.pressing())

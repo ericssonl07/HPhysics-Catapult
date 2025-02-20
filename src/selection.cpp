@@ -2,7 +2,7 @@
 
 double selector(double max)
 {
-    double value;
+    double value = 0;
     int power = -1;
     bool lastL, lastR, lastU, lastD;
     lastL = lastR = lastU = lastD = false;
@@ -11,6 +11,8 @@ double selector(double max)
         controller.Screen.clearScreen();
         controller.Screen.setCursor(1, 1);
         controller.Screen.print("%.6f m", value);
+        controller.Screen.setCursor(2, 1);
+        controller.Screen.print("Precision: 10^%d", power);
         // selection mode
         if (controller.ButtonLeft.pressing() && !lastL)
         {
